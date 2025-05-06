@@ -96,6 +96,10 @@ To see the full aggregated output statistics, specify `--output-json {filename}`
 }
 ```
 
+### Tests
+
+To run tests: `poetry run pytest`
+
 
 ## Project Requirements
 
@@ -217,7 +221,7 @@ I'm going to start with the simple CLI script, adhering to the states requiremen
 
 ## ToDo
 
-1. Unit testing
+1. Increase testing coverage
 2. Performance testing (start up, concurrency I/O, memory complexity, etc.)
 3. Persistent storage via a database like Redis (good for queue/set) and/or Postrgres
 4. Peristent configuration via .env (or SSM for actual service)

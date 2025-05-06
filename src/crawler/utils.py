@@ -8,9 +8,15 @@ logger = logging.getLogger(__name__)
 
 def get_domain(url: str) -> Optional[str]:
     """Extract the netloc (domain) from a URL"""
+    if not url:
+        return None
+
     try:
         parsed = urlparse(url)
-        return parsed.netloc
+        if parsed.netloc:
+            return parsed.netloc
+        else:
+            return None
     except ValueError:
         return None
 
@@ -105,11 +111,11 @@ def process_blacklist_input(input_value: Optional[str]) -> Optional[List[str]]:
 
     else:
         if os.path.sep in input_value and not os.path.exists(input_value):
-            logger.warning(
-                f"Blacklist argument '{input_value}' looks like a path but file not found. Treating it as comma-separated string!"
+            raise IOError(
+                f"Blacklist argument '{input_value}' looks like a path but file not found! Check the path or use a comma-separated string."
             )
         else:
-            logger.info('Processing blacklist extensions from command line string')
+            logger.info('Processing blacklist extensions from command-line string')
         try:
             blacklist_items_raw = [item.strip() for item in input_value.split(',') if item.strip()]
         except Exception as e:
