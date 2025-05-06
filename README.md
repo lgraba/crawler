@@ -99,6 +99,7 @@ To see the full aggregated output statistics, specify `--output-json {filename}`
 ### Tests
 
 To run tests: `poetry run pytest`
+To run tests with coverage: `poetry run pytest --cov=src/crawler`
 
 
 ## Project Requirements
