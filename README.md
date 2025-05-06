@@ -115,7 +115,7 @@ I bifurcated the "Total number of errors" requirement into two separate statisti
 
 I'm going to start with the simple CLI script, adhering to the states requirements. However, I want to keep options open for future extensibility, robustness, and possible integration into an API that would make this a standalone service.
 
-Crawling Library: httpx + bs4
+#### Crawling Library: httpx + bs4
 * Lighter-weight solution
 * Gives us the option of sync/async (I'll be utilizing async for concurrency)
 * Would seamlessly integrate with FastAPI (future extensibility)
@@ -125,22 +125,27 @@ Crawling Library: httpx + bs4
 * Modern with nice API
 * Appropriate for the scale of project and base requirements
 
-Concurrency: Async
+#### Concurrency: Async
+* I'd like requests to made concurrently without the overhead of threads.
 
-Crawl State Management: In-memory at first, but expand to DB (future)
+#### Crawl State Management: In-memory
+* For the given scope of this small project, we'll stick to in-memory state management for now. For a more robust, production-level implementation a persistent database store would be most appropriate. Redis, for example, is very fast for queue/set operations.
 
-Data Storage for Outputs/Statistics: In-memory at first, but expand to DB (future)
+#### Data Storage for Outputs/Statistics: In-memory
+* Again, I'd like to have persistent data storage via a database (Postgres) in the future.
 
-Handling Input Constraints: Check when adding to the queue
+#### Handling Input Constraints: Check when adding to the queue
 
-Error Handling: Log and Continue
+#### Error Handling: Log and Continue
 
-Infrastructure: Start with a simple CLI script, but then Dockerize it (especially if we're adding a DB). Redis is very fast for queue/set operations...
+#### Infrastructure: Start with a simple CLI script
+* In the future, assuming we want to implement a full API service encompassing this crawler, I would containerize it (especially if we're adding persistent database storage). This would allow us to maintain architecture independence, easiest start-up for additional developers to start using it, and easy deployment to remote environments.
+* CI/CD is a further consideration: automated test runs upon PR via Github Actions would be a good idea to implement for a more robust developmental methodology.
 
-DX:
+#### Developer Experience
 * Dependency management: Poetry
-* (future) Dockerization for easy start-up, transportability across architectures, and future extensibility (like when we want to make this an actual service). This probably only makes sense with additional infrastructure like a database is added.
-* ruff linting rules in pyproject.toml for consistency
+* (future) Containerization for easy start-up, transportability across architectures, and future extensibility (like when we want to make this an actual service). This probably only makes sense with additional infrastructure like a database is added. Assuming segregated containers (API service, postgres, redis) I would use Docker Compose for local container orchestration.
+* Ruff linting rules in pyproject.toml for consistency and ensured readability
 
 
 ## ToDo

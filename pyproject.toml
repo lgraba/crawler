@@ -1,0 +1,34 @@
+[project]
+name = "crawler"
+version = "0.1.0"
+description = "A Python web crawler"
+authors = [
+    {name = "Logan Graba",email = "lgraba@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx[http2] (>=0.27.0)",
+    "beautifulsoup4 (>=4.12.3)",
+    "pydantic (>=2.7.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{include = "crawler", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+ruff = "^0.11.8"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
