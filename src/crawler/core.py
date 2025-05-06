@@ -7,66 +7,12 @@ from typing import List, Optional, Set
 import httpx
 from bs4 import BeautifulSoup
 
+from .constants import DEFAULT_BLACKLIST_EXTENSIONS, DEFAULT_HEADERS
 from .models import CrawlReport, CrawlResult, CrawlStats
 from .utils import get_domain, is_valid_url, normalize_url
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] %(message)s')
 logger = logging.getLogger(__name__)
-
-# TODO: consider adding user-agent rotation later if realistic simulation is required
-DEFAULT_HEADERS = {
-    'User-Agent': 'ASimplePythonCrawler/1.0 (+http://example.com/botinfo)',  # good etiquette :-)
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Connection': 'keep-alive',
-}
-
-# Default extensions to ignore, which can be augmented by user blacklist
-DEFAULT_BLACKLIST_EXTENSIONS = {
-    '.css',
-    '.js',
-    '.json',
-    '.xml',
-    '.rss',
-    '.atom',
-    '.txt',
-    '.webmanifest',
-    '.pdf',
-    '.doc',
-    '.docx',
-    '.xls',
-    '.xlsx',
-    '.ppt',
-    '.pptx',
-    '.zip',
-    '.gz',
-    '.rar',
-    '.tar',
-    '.7z',
-    '.exe',
-    '.dmg',
-    '.iso',
-    '.png',
-    '.jpg',
-    '.jpeg',
-    '.gif',
-    '.svg',
-    '.webp',
-    '.ico',
-    '.bmp',
-    '.mp4',
-    '.avi',
-    '.mov',
-    '.wmv',
-    '.mp3',
-    '.wav',
-    '.ogg',
-    '.woff',
-    '.woff2',
-    '.ttf',
-    '.otf',
-    '.eot',
-}
 
 
 class Crawler:
@@ -92,14 +38,8 @@ class Crawler:
 
         self.allowed_domains: Optional[Set[str]] = set(allowed_domains) if allowed_domains else None
 
-        if blacklist_extensions:
-            self.blacklist_extensions = set()
-            for ext in blacklist_extensions:
-                if ext:
-                    clean_ext = ext.lower()
-                    if not clean_ext.startswith('.'):
-                        clean_ext = '.' + clean_ext
-                    self.blacklist_extensions.add(clean_ext)
+        if blacklist_extensions is not None:
+            self.blacklist_extensions = set(blacklist_extensions)
             logger.info(f'Using provided blacklist extensions: {self.blacklist_extensions}')
         else:
             self.blacklist_extensions = DEFAULT_BLACKLIST_EXTENSIONS.copy()
@@ -134,19 +74,19 @@ class Crawler:
         logger.debug(f'Worker {worker_id} starting.')
         while True:
             try:
-                # Wait for an item from the queue
+                # wait for an item from the queue
                 current_url, current_depth = await self._queue.get()
                 logger.debug(f'Worker {worker_id} got URL: {current_url} (depth {current_depth})')
 
-                # Double-check if visited (might have been visited by another worker between adding to queue and processing)
+                # double-check if visited (might have been visited by another worker between adding to queue and processing)
                 if current_url in self._visited_urls:
                     self._queue.task_done()
                     continue
 
-                # Add to visited before processing to prevent re-queueing
+                # add to visited before processing to prevent re-queueing
                 self._visited_urls.add(current_url)
 
-                # Acquire semaphore before making request
+                # acquire semaphore before making request
                 async with self._semaphore:
                     await self._process_url(client, current_url, current_depth)
 
@@ -154,10 +94,6 @@ class Crawler:
 
             except asyncio.CancelledError:
                 logger.debug(f'Worker {worker_id} was cancelled.')
-                # Important: If cancelled while waiting on queue.get(),
-                # task_done() wouldn't be called for the item it *would have* processed.
-                # However, queue.join() waits for task_done count == put count,
-                # so this shouldn't block queue.join indefinitely.
                 break
             except Exception as e:
                 logger.error(f'Critical error in worker {worker_id} loop: {e}', exc_info=True)
@@ -207,12 +143,10 @@ class Crawler:
 
                         if normalized_url and normalized_url not in self._visited_urls:
                             if is_valid_url(normalized_url, self.allowed_domains, self.blacklist_extensions):
-                                # Check visited again right before putting (minimal race condition window)
+                                # check visited again right before putting (minimal race condition window)
                                 if normalized_url not in self._visited_urls:
                                     logger.debug(f'Queueing Link: {normalized_url} (Depth: {depth + 1})')
                                     await self._queue.put((normalized_url, depth + 1))
-                                    # Optimistically mark as visited here? Could slightly reduce duplicate checks but might prematurely mark if put fails (unlikely)
-                                    # self._visited_urls.add(normalized_url)
                             else:
                                 logger.debug(f'Filtered Link: {normalized_url}')
             else:
@@ -221,7 +155,6 @@ class Crawler:
         except httpx.HTTPStatusError as e:
             logger.warning(f'HTTP error fetching {url}: Status {e.response.status_code}')
             result.error = f'HTTP Status {e.response.status_code}'
-            # Optionally count specific statuses as request errors if needed
         except httpx.RequestError as e:
             logger.error(f'Request error fetching {url}: {type(e).__name__}')
             result.error = f'Request Error: {type(e).__name__}'
@@ -267,9 +200,6 @@ class Crawler:
             for i in range(self.concurrency):
                 task = asyncio.create_task(self._worker(i, client), name=f'worker-{i}')
                 worker_tasks.append(task)
-                # Track active tasks for monitoring/cleanup (optional here as we join queue)
-                # self._active_tasks.add(task)
-                # task.add_done_callback(self._active_tasks.remove)
 
             await self._queue.join()
             logger.info('All items processed from queue.')

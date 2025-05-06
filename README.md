@@ -9,11 +9,12 @@ A Python web crawler
 2. `poetry run python main.py -h`
 3. `poetry run python main.py {start_url} --max-depth 10`
 
-Here are some sites that you may want to try scraping on:
+Here are some sites that you may want to try crawling:
 * `https://quotes.toscrape.com/`
 * `https://webscraper.io/test-sites/e-commerce/allinone`
 
 E.g.
+
 ```
 poetry run python main.py https://quotes.toscrape.com/ --max-depth 2 --domains quotes.toscrape.com --output-json stats.json
 ```
@@ -25,9 +26,75 @@ This command will:
 * With the default verbosity of `INFO`
 * Placing output statistics in `stats.json`
 
-### Default Blacklist
+### Blacklist Extensions
 
-Note that there is a default blacklist containing common file extensions one would not normally want to crawl. If one supplies a blacklist at execution time, only specified extensions will be blacklisted.
+Note that there is a default blacklist containing common file extensions one would not normally want to crawl. If one supplies a blacklist at execution time, only specified extensions will be blacklisted. You may supply a blacklist via a comma-separated list of file extensions either via command-line or file.
+
+E.g. Supplying a file of blacklist extensions
+
+```
+poetry run python main.py https://quotes.toscrape.com/ --max-depth 2 --blacklist example.blacklist.txt --output-json stats.json
+```
+
+### Output Statistics
+
+To see the full aggregated output statistics, specify `--output-json {filename}`. This contains the **Outputs** and **Statistics** defined below in the project requirements. Here is an example, abbreviated:
+
+```
+{
+  "allowed_domains": null,
+  "blacklist_extensions": [
+    ".jpg",
+    ".logan",
+    ".png"
+  ],
+  "max_depth": 2,
+  "results": [
+    {
+      "content_size": 11064,
+      "depth": 0,
+      "error": null,
+      "status_code": 200,
+      "timestamp": "2025-05-06T04:57:00.258309Z",
+      "title": "Quotes to Scrape",
+      "url": "https://quotes.toscrape.com/"
+    },
+    ... (n - 1 result objects)
+  ],
+  "start_url": "https://quotes.toscrape.com/",
+  "stats": {
+    "domain_counts": {
+      "quotes.toscrape.com": 149,
+      "www.goodreads.com": 234,
+      "www.zyte.com": 47,
+      "help.goodreads.com": 2,
+      "www.facebook.com": 2,
+      "twitter.com": 2,
+      "www.instagram.com": 2,
+      "www.linkedin.com": 2,
+      "itunes.apple.com": 1,
+      "play.google.com": 1,
+      "app.zyte.com": 5,
+      "support.zyte.com": 1,
+      "docs.zyte.com": 2,
+      "discord.com": 2,
+      "info.zyte.com": 1,
+      "www.youtube.com": 1
+    },
+    "duration_seconds": 22.02,
+    "end_time": "2025-05-06T04:57:22.017346Z",
+    "start_time": "2025-05-06T04:56:59.999426Z",
+    "status_code_counts": {
+      "200": 449,
+      "429": 1,
+      "400": 2
+    },
+    "total_errors_processing": 0,
+    "total_errors_request": 2,
+    "total_urls_processed": 454
+  }
+}
+```
 
 
 ## Project Requirements
@@ -143,9 +210,9 @@ I'm going to start with the simple CLI script, adhering to the states requiremen
 * CI/CD is a further consideration: automated test runs upon PR via Github Actions would be a good idea to implement for a more robust developmental methodology.
 
 #### Developer Experience
-* Dependency management: Poetry
-* (future) Containerization for easy start-up, transportability across architectures, and future extensibility (like when we want to make this an actual service). This probably only makes sense with additional infrastructure like a database is added. Assuming segregated containers (API service, postgres, redis) I would use Docker Compose for local container orchestration.
+* Dependency management via Poetry
 * Ruff linting rules in pyproject.toml for consistency and ensured readability
+* (future) Containerization for easy start-up, transportability across architectures, and future extensibility (like when we want to make this an actual service). This only makes sense with additional infrastructure. Assuming segregated containers (API service, postgres, redis) I would use Docker Compose for local container orchestration.
 
 
 ## ToDo

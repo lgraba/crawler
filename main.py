@@ -2,8 +2,10 @@ import argparse
 import asyncio
 import logging
 import sys
+from typing import List, Optional
 
 from crawler import Crawler
+from crawler.utils import process_blacklist_input
 
 
 async def run_crawl():
@@ -13,8 +15,7 @@ async def run_crawl():
     parser.add_argument('--domains', nargs='*', help='List of allowed domains (optional)')
     parser.add_argument(
         '--blacklist',
-        nargs='*',
-        help='List of additional file extensions to ignore (e.g., . Mime types are not checked)',
+        help="Comma-separated list of file extensions (e.g. '.jpg,.png') or path to a file (e.g. 'path/to/blacklist.txt') containing a comma-separated list of extensions to ignore",
     )
     parser.add_argument('--concurrency', type=int, default=10, help='Number of concurrent workers')
     parser.add_argument('--timeout', type=float, default=10.0, help='Request timeout in seconds')
@@ -29,6 +30,20 @@ async def run_crawl():
 
     args = parser.parse_args()
 
+    # blacklist file vs. list handling
+    blacklist_extensions: Optional[List[str]] = None
+
+    try:
+        blacklist_extensions = process_blacklist_input(args.blacklist)
+    except (IOError, ValueError, Exception) as e:
+        logging.error(f'Failed to process blacklist: {e}')
+
+        if not isinstance(e, (IOError, ValueError)):
+            logging.exception('Unexpected error during blacklist processing.')
+
+        sys.exit(1)
+
+    # logging config
     if args.verbose == 1:
         log_level = logging.INFO
     elif args.verbose >= 2:
@@ -54,7 +69,7 @@ async def run_crawl():
             start_url=args.start_url,
             max_depth=args.max_depth,
             allowed_domains=args.domains,
-            blacklist_extensions=args.blacklist,
+            blacklist_extensions=blacklist_extensions,
             concurrency=args.concurrency,
             timeout=args.timeout,
             user_agent=args.user_agent,

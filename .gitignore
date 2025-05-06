@@ -43,4 +43,5 @@ pylint.out
 .DS_Store
 Thumbs.db
 
-.json
+# Crawler output json data files
+*.json
